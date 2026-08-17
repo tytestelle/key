@@ -13,9 +13,10 @@ KU9_APK="input/ku9.apk"
 DECODE_DIR="ku9_decode"
 
 
+
 if [ ! -f "$KU9_APK" ]; then
 
-    echo "KU9 APK missing"
+    echo "ERROR: KU9 APK missing"
 
     exit 1
 
@@ -23,7 +24,7 @@ fi
 
 
 
-echo "[1/5] Decode KU9 resource"
+echo "[1/6] Decode KU9 resource"
 
 
 rm -rf "$DECODE_DIR"
@@ -36,42 +37,75 @@ d "$KU9_APK" \
 
 
 
-echo "[2/5] Backup current resources"
-
-
-mkdir -p backup
-
-
-cp -r app/src/main/res backup/res_old || true
+echo "[2/6] Find Android resource path"
 
 
 
-echo "[3/5] Merge KU9 resources"
+RES_DIR=$(find . -type d -path "*/src/main/res" | head -n 1)
 
 
-cp -rf \
-"$DECODE_DIR/res/"* \
-app/src/main/res/
+if [ -z "$RES_DIR" ]; then
 
+    echo "ERROR: Cannot find Android res directory"
 
+    echo "Project tree:"
 
-echo "[4/5] Merge assets"
+    find . -maxdepth 4 -type d | head -50
 
-
-mkdir -p app/src/main/assets
-
-
-if [ -d "$DECODE_DIR/assets" ]; then
-
-cp -rf \
-"$DECODE_DIR/assets/"* \
-app/src/main/assets/
+    exit 1
 
 fi
 
 
 
-echo "[5/5] Save manifest"
+echo "Found res:"
+echo "$RES_DIR"
+
+
+
+ASSET_DIR=$(dirname "$RES_DIR")/assets
+
+
+
+echo "[3/6] Backup resources"
+
+
+mkdir -p backup
+
+
+cp -r "$RES_DIR" backup/res_backup
+
+
+
+echo "[4/6] Merge KU9 resources"
+
+
+
+cp -rf \
+"$DECODE_DIR/res/"* \
+"$RES_DIR/"
+
+
+
+echo "[5/6] Merge assets"
+
+
+
+mkdir -p "$ASSET_DIR"
+
+
+if [ -d "$DECODE_DIR/assets" ]; then
+
+    cp -rf \
+    "$DECODE_DIR/assets/"* \
+    "$ASSET_DIR/" || true
+
+fi
+
+
+
+echo "[6/6] Save KU9 manifest"
+
 
 
 cp \
