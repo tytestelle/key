@@ -1,101 +1,153 @@
 #!/bin/bash
 
+
 set -e
 
 
-APK=input/ku9.apk
 
-OUT=output
+echo "============================"
 
+echo " KU9 DECOMPILE "
 
-rm -rf $OUT
-
-mkdir -p $OUT
+echo "============================"
 
 
 
-echo "[1] apktool"
+APK="input/ku9.apk"
+
+OUT="output"
+
+
+
+if [ ! -f "$APK" ]; then
+
+    echo "APK NOT FOUND"
+
+    exit 1
+
+fi
+
+
+
+rm -rf "$OUT"
+
+mkdir -p "$OUT"
+
+
+
+echo "[1/5] Apktool"
+
 
 
 java -jar tools/apktool.jar \
-d $APK \
--o $OUT/apktool \
+d "$APK" \
+-o "$OUT/apktool" \
 --force
 
 
 
-echo "[2] extract dex"
+
+echo "[2/5] Extract dex"
 
 
-mkdir -p $OUT/dex
+
+mkdir -p "$OUT/dex"
+
 
 
 unzip -o \
-$APK \
+"$APK" \
 "classes*.dex" \
--d $OUT/dex
+-d "$OUT/dex"
 
 
 
-echo "[3] dex to jar"
+
+echo "[3/5] D8 convert"
 
 
-mkdir -p $OUT/jar
+
+mkdir -p "$OUT/jar"
 
 
-for dex in $OUT/dex/classes*.dex
+
+for dex in "$OUT"/dex/classes*.dex
 
 do
 
-NAME=$(basename $dex .dex)
+
+    NAME=$(basename "$dex" .dex)
 
 
-echo "convert $NAME"
+    echo "convert $NAME"
 
 
-d8 \
---output $OUT/jar \
-$dex
+
+    d8 \
+    --min-api 21 \
+    --output "$OUT/jar" \
+    "$dex"
+
 
 
 done
 
 
 
-echo "[4] CFR"
+
+echo "[4/5] CFR"
 
 
-mkdir -p $OUT/java
+
+mkdir -p "$OUT/java"
 
 
-for jar in $OUT/jar/*.jar
+
+for jar in "$OUT"/jar/*.jar
 
 do
 
-NAME=$(basename $jar .jar)
+
+    NAME=$(basename "$jar" .jar)
 
 
-mkdir -p $OUT/java/$NAME
+
+    mkdir -p "$OUT/java/$NAME"
 
 
-java -jar tools/cfr.jar \
-$jar \
---outputdir $OUT/java/$NAME \
---silent true
+
+    echo "java $NAME"
+
+
+
+    java -jar tools/cfr.jar \
+    "$jar" \
+    --outputdir "$OUT/java/$NAME" \
+    --silent true
+
 
 
 done
 
 
 
-echo "[5] copy resources"
+
+echo "[5/5] Copy resources"
 
 
-cp -r $OUT/apktool/res $OUT/ || true
 
-cp -r $OUT/apktool/assets $OUT/ || true
-
-cp $OUT/apktool/AndroidManifest.xml $OUT/ || true
+cp -r "$OUT/apktool/res" "$OUT/" || true
 
 
-echo "DONE"
+cp -r "$OUT/apktool/assets" "$OUT/" || true
+
+
+cp "$OUT/apktool/AndroidManifest.xml" "$OUT/" || true
+
+
+
+echo "============================"
+
+echo " FINISHED "
+
+echo "============================"
