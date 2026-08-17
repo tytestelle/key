@@ -20,13 +20,35 @@ jobs:
     steps:
 
 
-    - name: Checkout
+    # =========================
+    # 拉取源码
+    # =========================
+
+    - name: Checkout source
 
       uses: actions/checkout@v4
 
 
 
-    - name: Install tools
+    # =========================
+    # 显示工程结构
+    # =========================
+
+    - name: Show project tree
+
+      run: |
+
+        echo "===== Project ====="
+
+        find . -maxdepth 4 -type d | sort | head -150
+
+
+
+    # =========================
+    # 安装环境
+    # =========================
+
+    - name: Install dependencies
 
       run: |
 
@@ -34,9 +56,14 @@ jobs:
 
         sudo apt install -y \
           wget \
+          unzip \
           openjdk-17-jdk
 
 
+
+    # =========================
+    # 安装 apktool
+    # =========================
 
     - name: Install apktool
 
@@ -51,7 +78,24 @@ jobs:
 
 
 
-    - name: Apply KU9 resources
+    # =========================
+    # 检查 KU9 APK
+    # =========================
+
+    - name: Check KU9 APK
+
+      run: |
+
+        ls -lh input/
+
+
+
+
+    # =========================
+    # 合并 KU9资源
+    # =========================
+
+    - name: Apply KU9 patch
 
       run: |
 
@@ -61,15 +105,48 @@ jobs:
 
 
 
+    # =========================
+    # 查找 gradle
+    # =========================
+
+    - name: Find gradle project
+
+      run: |
+
+        find . -name gradlew -type f
+
+
+
+
+    # =========================
+    # 编译
+    # =========================
+
     - name: Build APK
 
       run: |
 
-        chmod +x gradlew
+        chmod +x ./gradlew
 
-        ./gradlew assembleRelease
+        ./gradlew assembleRelease --stacktrace
 
 
+
+    # =========================
+    # 查找生成APK
+    # =========================
+
+    - name: Find APK
+
+      run: |
+
+        find . -name "*.apk"
+
+
+
+    # =========================
+    # 上传
+    # =========================
 
     - name: Upload APK
 
@@ -78,8 +155,8 @@ jobs:
 
       with:
 
-        name: KU9-build
+        name: KU9-release-apk
 
         path: |
 
-          app/build/outputs/apk/release/*.apk
+          **/build/outputs/apk/**/*.apk
