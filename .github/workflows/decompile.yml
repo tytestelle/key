@@ -1,32 +1,100 @@
-    - name: Install Android SDK tools
+name: KU9 Decompile
+
+
+on:
+
+  workflow_dispatch:
+
+
+
+permissions:
+
+  contents: read
+
+
+
+jobs:
+
+
+  decompile:
+
+
+    runs-on: ubuntu-latest
+
+
+
+    steps:
+
+
+
+    - name: Checkout
+
+      uses: actions/checkout@v4
+
+
+
+    - name: Install Java
 
       run: |
 
         sudo apt update
 
-        sudo apt install -y wget unzip openjdk-17-jdk
+        sudo apt install -y \
+          wget \
+          unzip \
+          openjdk-17-jdk
 
 
 
-    - name: Download Android build tools
+    - name: Create tools
 
       run: |
 
-        mkdir -p android-tools
+        mkdir -p tools
 
 
-        wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip \
-        -O android-tools.zip
+
+    - name: Download apktool
+
+      run: |
+
+        wget \
+        https://github.com/iBotPeaches/Apktool/releases/download/v3.0.3/apktool_3.0.3.jar \
+        -O tools/apktool.jar
 
 
-        unzip -q android-tools.zip -d android-tools
 
+    - name: Download CFR
+
+      run: |
+
+        wget \
+        https://www.benf.org/other/cfr/cfr-0.152.jar \
+        -O tools/cfr.jar
+
+
+
+    - name: Install Android SDK
+
+      run: |
+
+
+        mkdir -p $HOME/android-sdk
+
+
+        wget \
+        https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip \
+        -O sdk.zip
+
+
+        unzip -q sdk.zip -d $HOME/android-sdk/temp
 
 
         mkdir -p $HOME/android-sdk/cmdline-tools/latest
 
 
-        mv android-tools/cmdline-tools/* \
+        mv \
+        $HOME/android-sdk/temp/cmdline-tools/* \
         $HOME/android-sdk/cmdline-tools/latest/
 
 
@@ -34,10 +102,58 @@
         export ANDROID_HOME=$HOME/android-sdk
 
 
+
         yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
+        --sdk_root=$ANDROID_HOME \
         "platform-tools" \
         "build-tools;35.0.0"
 
 
 
         echo "$ANDROID_HOME/build-tools/35.0.0" >> $GITHUB_PATH
+
+
+
+    - name: Check environment
+
+      run: |
+
+        java -version
+
+        which d8
+
+        d8 --version
+
+        ls -lh input/
+
+        ls -lh tools/
+
+
+
+    - name: Run decompile
+
+      run: |
+
+        chmod +x scripts/decompile.sh
+
+        ./scripts/decompile.sh
+
+
+
+    - name: Compress result
+
+      run: |
+
+        zip -r KU9-source.zip output
+
+
+
+    - name: Upload result
+
+      uses: actions/upload-artifact@v4
+
+      with:
+
+        name: KU9-source
+
+        path: KU9-source.zip
