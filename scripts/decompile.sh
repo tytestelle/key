@@ -1,11 +1,16 @@
 #!/bin/bash
 
+
 set -e
 
 
-echo "================================"
-echo " KU9 Decompile Start"
-echo "================================"
+
+echo "=============================="
+
+echo " KU9 Decompile"
+
+echo "=============================="
+
 
 
 APK="input/ku9.apk"
@@ -13,13 +18,15 @@ APK="input/ku9.apk"
 OUT="output"
 
 
+
 if [ ! -f "$APK" ]; then
 
-    echo "APK not found"
+    echo "ERROR: ku9.apk not found"
 
     exit 1
 
 fi
+
 
 
 rm -rf "$OUT"
@@ -28,7 +35,7 @@ mkdir -p "$OUT"
 
 
 
-echo "[1/6] apktool"
+echo "[1/6] Apktool"
 
 
 java -jar tools/apktool.jar \
@@ -38,7 +45,8 @@ d "$APK" \
 
 
 
-echo "[2/6] extract dex"
+
+echo "[2/6] Extract dex"
 
 
 mkdir -p "$OUT/dex"
@@ -51,10 +59,12 @@ unzip -o \
 
 
 
-echo "[3/6] baksmali"
+
+echo "[3/6] Baksmali"
 
 
 mkdir -p "$OUT/smali"
+
 
 
 for dex in "$OUT"/dex/classes*.dex
@@ -64,21 +74,24 @@ do
     NAME=$(basename "$dex" .dex)
 
 
-    echo "Decode $NAME"
+    echo "decode $NAME"
 
 
     java -jar tools/baksmali.jar \
     d "$dex" \
     -o "$OUT/smali/$NAME"
 
+
 done
 
 
 
-echo "[4/6] dex2jar"
+
+echo "[4/6] Dex2Jar"
 
 
 mkdir -p "$OUT/jar"
+
 
 
 for dex in "$OUT"/dex/classes*.dex
@@ -88,7 +101,7 @@ do
     NAME=$(basename "$dex" .dex)
 
 
-    echo "Convert $NAME"
+    echo "convert $NAME"
 
 
     sh tools/dex-tools/d2j-dex2jar.sh \
@@ -96,7 +109,10 @@ do
     -o "$OUT/jar/$NAME.jar" \
     --force
 
+
 done
+
+
 
 
 
@@ -104,6 +120,7 @@ echo "[5/6] CFR"
 
 
 mkdir -p "$OUT/java"
+
 
 
 for jar in "$OUT"/jar/*.jar
@@ -116,7 +133,8 @@ do
     mkdir -p "$OUT/java/$NAME"
 
 
-    echo "CFR $NAME"
+    echo "decompile $NAME"
+
 
 
     java -jar tools/cfr.jar \
@@ -124,23 +142,28 @@ do
     --outputdir "$OUT/java/$NAME" \
     --silent true
 
+
 done
 
 
 
-echo "[6/6] copy resources"
+
+
+echo "[6/6] Copy resources"
+
 
 
 cp -r "$OUT/apktool/res" "$OUT/" || true
 
-
 cp -r "$OUT/apktool/assets" "$OUT/" || true
-
 
 cp "$OUT/apktool/AndroidManifest.xml" "$OUT/" || true
 
 
 
-echo "================================"
-echo " Finished"
-echo "================================"
+
+echo "=============================="
+
+echo " DONE "
+
+echo "=============================="
