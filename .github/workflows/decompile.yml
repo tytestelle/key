@@ -25,7 +25,7 @@ jobs:
 
 
 
-    - name: Install environment
+    - name: Install Java
 
       run: |
 
@@ -34,7 +34,6 @@ jobs:
         sudo apt install -y \
           wget \
           unzip \
-          git \
           openjdk-17-jdk
 
 
@@ -57,31 +56,6 @@ jobs:
 
 
 
-    - name: Build dex2jar
-
-      run: |
-
-        git clone https://github.com/pxb1988/dex2jar.git
-
-
-        cd dex2jar
-
-
-        ./gradlew distZip
-
-
-        unzip -o dex-tools/build/distributions/*.zip -d ../tools
-
-
-
-        cd ..
-
-
-
-        mv tools/dex-tools-* tools/dex-tools
-
-
-
     - name: Download CFR
 
       run: |
@@ -92,17 +66,25 @@ jobs:
 
 
 
+    - name: Install Android build tools
+
+      run: |
+
+        sudo apt install -y android-sdk-build-tools
+
+
+
     - name: Check
 
       run: |
 
-        ls -R tools
+        ls -lh input/
 
-        ls -lh input
+        java -version
 
 
 
-    - name: Run
+    - name: Run decompile
 
       run: |
 
