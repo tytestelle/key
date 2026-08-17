@@ -1,33 +1,21 @@
 name: KU9 Decompile CFR
 
-
 on:
-
   workflow_dispatch:
 
 
-
 permissions:
-
   contents: read
-
 
 
 jobs:
 
-
   decompile:
-
-
-    name: Decompile KU9 APK
-
 
     runs-on: ubuntu-latest
 
 
-
     steps:
-
 
 
     - name: Checkout
@@ -36,7 +24,7 @@ jobs:
 
 
 
-    - name: Install Java and tools
+    - name: Install Java
 
       run: |
 
@@ -49,7 +37,7 @@ jobs:
 
 
 
-    - name: Create tools folder
+    - name: Prepare tools
 
       run: |
 
@@ -72,7 +60,7 @@ jobs:
       run: |
 
         wget \
-        https://repo1.maven.org/maven2/com/android/tools/smali/baksmali/3.0.9/baksmali-3.0.9.jar \
+        https://github.com/JesusFreke/smali/releases/latest/download/baksmali.jar \
         -O tools/baksmali.jar
 
 
@@ -82,7 +70,7 @@ jobs:
       run: |
 
         wget \
-        https://repo1.maven.org/maven2/com/android/tools/smali/smali/3.0.9/smali-3.0.9.jar \
+        https://github.com/JesusFreke/smali/releases/latest/download/smali.jar \
         -O tools/smali.jar
 
 
@@ -117,13 +105,11 @@ jobs:
 
       run: |
 
-        echo "APK:"
-
         ls -lh input/
 
 
 
-    - name: Decode resources
+    - name: Decode resource
 
       run: |
 
@@ -153,21 +139,18 @@ jobs:
 
 
 
-    - name: Baksmali decode
+    - name: Baksmali
 
       run: |
 
         mkdir -p output/smali
 
 
-        for dex in output/dex/*.dex
+        for dex in output/dex/classes*.dex
 
         do
 
           name=$(basename "$dex" .dex)
-
-
-          echo "Decode $name"
 
 
           java -jar tools/baksmali.jar \
@@ -179,21 +162,18 @@ jobs:
 
 
 
-    - name: Dex to jar
+    - name: Dex2jar
 
       run: |
 
         mkdir -p output/jar
 
 
-        for dex in output/dex/*.dex
+        for dex in output/dex/classes*.dex
 
         do
 
           name=$(basename "$dex" .dex)
-
-
-          echo "Convert $name"
 
 
           sh tools/dex-tools/d2j-dex2jar.sh \
@@ -206,7 +186,7 @@ jobs:
 
 
 
-    - name: CFR Java decompile
+    - name: CFR
 
       run: |
 
@@ -221,9 +201,6 @@ jobs:
 
 
           mkdir -p output/java/$name
-
-
-          echo "Decompile $name"
 
 
           java -jar tools/cfr.jar \
@@ -242,28 +219,26 @@ jobs:
 
         cp -r output/apktool/res output/ || true
 
-
         cp -r output/apktool/assets output/ || true
-
 
         cp output/apktool/AndroidManifest.xml output/ || true
 
 
 
-    - name: Package result
+    - name: Package
 
       run: |
 
-        zip -r KU9-source-CFR.zip output
+        zip -r KU9-CFR-source.zip output
 
 
 
-    - name: Upload result
+    - name: Upload
 
       uses: actions/upload-artifact@v4
 
       with:
 
-        name: KU9-source-CFR
+        name: KU9-CFR-source
 
-        path: KU9-source-CFR.zip
+        path: KU9-CFR-source.zip
