@@ -1,4 +1,4 @@
-name: KU9 Decompile CFR
+name: KU9 Decompile
 
 
 on:
@@ -61,14 +61,8 @@ jobs:
       run: |
 
         wget \
-        https://github.com/pxb1988/dex2jar/releases/download/v2.4/dex-tools-2.4.zip \
-        -O dex-tools.zip
-
-
-        unzip -o dex-tools.zip
-
-
-        mv dex-tools-* tools/dex-tools
+        https://repo1.maven.org/maven2/com/googlecode/dex2jar/dex-tools/2.4/dex-tools-2.4.jar \
+        -O tools/dex-tools.jar
 
 
 
@@ -82,13 +76,13 @@ jobs:
 
 
 
-    - name: Check
+    - name: Check tools
 
       run: |
 
-        ls -lh input/
-
         ls -lh tools/
+
+        ls -lh input/
 
 
 
