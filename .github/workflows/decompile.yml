@@ -1,0 +1,122 @@
+name: KU9 Decompile CFR
+
+
+on:
+
+  workflow_dispatch:
+
+
+
+jobs:
+
+  decompile:
+
+
+    runs-on: ubuntu-latest
+
+
+
+    steps:
+
+
+    - name: Checkout
+
+      uses: actions/checkout@v4
+
+
+
+    - name: Install Java
+
+      run: |
+
+        sudo apt update
+
+        sudo apt install -y \
+        wget \
+        unzip \
+        openjdk-17-jdk
+
+
+
+    - name: Download tools
+
+      run: |
+
+        mkdir -p tools
+
+
+        # apktool
+
+        wget \
+        https://github.com/iBotPeaches/Apktool/releases/download/v3.0.3/apktool_3.0.3.jar \
+        -O tools/apktool.jar
+
+
+
+        # baksmali
+
+        wget \
+        https://github.com/JesusFreke/smali/releases/download/v3.0.9/baksmali-3.0.9.jar \
+        -O tools/baksmali.jar
+
+
+
+        # dex2jar
+
+        wget \
+        https://github.com/pxb1988/dex2jar/releases/download/v2.4/dex-tools-2.4.zip \
+        -O dex-tools.zip
+
+
+        unzip -o dex-tools.zip
+
+
+        mv dex-tools-* tools/dex-tools
+
+
+
+        # CFR
+
+        wget \
+        https://www.benf.org/other/cfr/cfr-0.152.jar \
+        -O tools/cfr.jar
+
+
+
+    - name: Check APK
+
+      run: |
+
+        ls -lh input/
+
+
+
+
+    - name: Run decompile
+
+      run: |
+
+        chmod +x scripts/decompile.sh
+
+        ./scripts/decompile.sh
+
+
+
+    - name: Compress
+
+      run: |
+
+        zip -r KU9-source-cfr.zip output
+
+
+
+    - name: Upload
+
+      uses: actions/upload-artifact@v4
+
+
+      with:
+
+        name: KU9-source-cfr
+
+        path: KU9-source-cfr.zip
