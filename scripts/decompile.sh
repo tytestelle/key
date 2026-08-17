@@ -2,106 +2,120 @@
 
 set -e
 
+
 echo "=================================="
 echo " KU9 APK Decompile Start"
 echo "=================================="
 
+
 APK_FILE="input/ku9.apk"
+
 OUTPUT="output"
 
-APKTOOL_JAR="tools/apktool.jar"
-JADX_BIN="tools/jadx/bin/jadx"
+APKTOOL="tools/apktool.jar"
+
+JADX="tools/bin/jadx"
 
 
-# =========================
-# Check APK
-# =========================
+
+# =====================
+# 检查 APK
+# =====================
 
 if [ ! -f "$APK_FILE" ]; then
-    echo "ERROR: APK not found:"
+
+    echo "APK not found:"
     echo "$APK_FILE"
+
     exit 1
+
 fi
 
 
-# =========================
-# Clean
-# =========================
+
+# =====================
+# 清理输出
+# =====================
 
 rm -rf "$OUTPUT"
 
 mkdir -p "$OUTPUT"
 
 
-# =========================
-# Apktool
-# =========================
+
+# =====================
+# apktool
+# =====================
 
 echo ""
-echo "[1/5] Apktool decode..."
+echo "[1/5] Apktool decode"
 
-java -jar "$APKTOOL_JAR" \
+
+java -jar "$APKTOOL" \
     d "$APK_FILE" \
     -o "$OUTPUT/apktool" \
-    --force \
-    --no-debug-info
+    --force
 
 
-# =========================
-# JADX
-# =========================
+
+# =====================
+# jadx
+# =====================
 
 echo ""
-echo "[2/5] JADX decompile..."
+echo "[2/5] JADX decompile"
 
-"$JADX_BIN" \
+
+"$JADX" \
     --deobf \
     --show-bad-code \
     -d "$OUTPUT/java" \
     "$APK_FILE"
 
 
-# =========================
-# Extract dex
-# =========================
+
+# =====================
+# dex
+# =====================
 
 echo ""
-echo "[3/5] Extract dex..."
+echo "[3/5] Extract dex"
+
 
 mkdir -p "$OUTPUT/dex"
+
 
 unzip -o "$APK_FILE" \
     "classes*.dex" \
     -d "$OUTPUT/dex" || true
 
 
-# =========================
-# Copy APK
-# =========================
+
+# =====================
+# 原 APK
+# =====================
 
 echo ""
-echo "[4/5] Copy original APK..."
+echo "[4/5] Copy APK"
+
 
 cp "$APK_FILE" "$OUTPUT/original.apk"
 
 
-# =========================
-# Information
-# =========================
+
+# =====================
+# 信息
+# =====================
 
 echo ""
-echo "[5/5] Generate info..."
+echo "[5/5] Complete"
 
-echo "APK:"
-echo "$APK_FILE"
 
-echo "Date:"
-date
+echo "Output:"
+echo "$OUTPUT"
 
 
 echo ""
 echo "=================================="
-echo " DONE"
-echo " Output:"
-echo "$OUTPUT"
+echo " KU9 Decompile Finished"
 echo "=================================="
