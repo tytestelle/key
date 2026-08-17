@@ -8,11 +8,6 @@ APK=input/ku9.apk
 OUT=output
 
 
-echo "======================"
-echo " KU9 Decompile "
-echo "======================"
-
-
 rm -rf $OUT
 
 mkdir -p $OUT
@@ -42,7 +37,7 @@ $APK \
 
 
 
-echo "[3] dex2jar"
+echo "[3] dex to jar"
 
 
 mkdir -p $OUT/jar
@@ -55,13 +50,12 @@ do
 NAME=$(basename $dex .dex)
 
 
-echo $NAME
+echo "convert $NAME"
 
 
-sh tools/dex-tools/d2j-dex2jar.sh \
-$dex \
--o $OUT/jar/$NAME.jar \
---force
+d8 \
+--output $OUT/jar \
+$dex
 
 
 done
@@ -94,7 +88,7 @@ done
 
 
 
-echo "[5] resources"
+echo "[5] copy resources"
 
 
 cp -r $OUT/apktool/res $OUT/ || true
