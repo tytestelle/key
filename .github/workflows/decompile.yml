@@ -1,113 +1,43 @@
-name: KU9 Decompile
-
-
-on:
-  workflow_dispatch:
-
-
-permissions:
-  contents: read
-
-
-jobs:
-
-  decompile:
-
-    runs-on: ubuntu-latest
-
-
-    steps:
-
-
-    - name: Checkout
-
-      uses: actions/checkout@v4
-
-
-
-    - name: Install Java
+    - name: Install Android SDK tools
 
       run: |
 
         sudo apt update
 
-        sudo apt install -y \
-          wget \
-          unzip \
-          openjdk-17-jdk
+        sudo apt install -y wget unzip openjdk-17-jdk
 
 
 
-    - name: Prepare tools
+    - name: Download Android build tools
 
       run: |
 
-        mkdir -p tools
+        mkdir -p android-tools
+
+
+        wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip \
+        -O android-tools.zip
+
+
+        unzip -q android-tools.zip -d android-tools
 
 
 
-    - name: Download apktool
+        mkdir -p $HOME/android-sdk/cmdline-tools/latest
 
-      run: |
 
-        wget \
-        https://github.com/iBotPeaches/Apktool/releases/download/v3.0.3/apktool_3.0.3.jar \
-        -O tools/apktool.jar
+        mv android-tools/cmdline-tools/* \
+        $HOME/android-sdk/cmdline-tools/latest/
 
 
 
-    - name: Download CFR
-
-      run: |
-
-        wget \
-        https://www.benf.org/other/cfr/cfr-0.152.jar \
-        -O tools/cfr.jar
+        export ANDROID_HOME=$HOME/android-sdk
 
 
-
-    - name: Install Android build tools
-
-      run: |
-
-        sudo apt install -y android-sdk-build-tools
+        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
+        "platform-tools" \
+        "build-tools;35.0.0"
 
 
 
-    - name: Check
-
-      run: |
-
-        ls -lh input/
-
-        java -version
-
-
-
-    - name: Run decompile
-
-      run: |
-
-        chmod +x scripts/decompile.sh
-
-        ./scripts/decompile.sh
-
-
-
-    - name: Package
-
-      run: |
-
-        zip -r KU9-source.zip output
-
-
-
-    - name: Upload
-
-      uses: actions/upload-artifact@v4
-
-      with:
-
-        name: KU9-source
-
-        path: KU9-source.zip
+        echo "$ANDROID_HOME/build-tools/35.0.0" >> $GITHUB_PATH
