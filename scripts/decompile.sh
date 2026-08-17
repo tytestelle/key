@@ -24,7 +24,7 @@ JADX="tools/bin/jadx"
 
 if [ ! -f "$APK_FILE" ]; then
 
-    echo "APK not found:"
+    echo "ERROR: APK not found:"
     echo "$APK_FILE"
 
     exit 1
@@ -34,7 +34,7 @@ fi
 
 
 # =====================
-# 清理输出
+# 清理旧文件
 # =====================
 
 rm -rf "$OUTPUT"
@@ -44,11 +44,11 @@ mkdir -p "$OUTPUT"
 
 
 # =====================
-# apktool
+# apktool 解包
 # =====================
 
 echo ""
-echo "[1/5] Apktool decode"
+echo "[1/6] Apktool decode"
 
 
 java -jar "$APKTOOL" \
@@ -59,27 +59,29 @@ java -jar "$APKTOOL" \
 
 
 # =====================
-# jadx
+# jadx 反编译
 # =====================
 
 echo ""
-echo "[2/5] JADX decompile"
+echo "[2/6] JADX decompile"
 
 
 "$JADX" \
     --deobf \
     --show-bad-code \
+    --no-imports \
+    --threads-count 4 \
     -d "$OUTPUT/java" \
-    "$APK_FILE"
+    "$APK_FILE" || true
 
 
 
 # =====================
-# dex
+# dex备份
 # =====================
 
 echo ""
-echo "[3/5] Extract dex"
+echo "[3/6] Extract dex"
 
 
 mkdir -p "$OUTPUT/dex"
@@ -92,11 +94,11 @@ unzip -o "$APK_FILE" \
 
 
 # =====================
-# 原 APK
+# 复制原APK
 # =====================
 
 echo ""
-echo "[4/5] Copy APK"
+echo "[4/6] Copy original APK"
 
 
 cp "$APK_FILE" "$OUTPUT/original.apk"
@@ -104,18 +106,29 @@ cp "$APK_FILE" "$OUTPUT/original.apk"
 
 
 # =====================
-# 信息
+# 生成结构信息
 # =====================
 
 echo ""
-echo "[5/5] Complete"
+echo "[5/6] Generate file list"
+
+
+find "$OUTPUT" > "$OUTPUT/filelist.txt"
+
+
+
+# =====================
+# 完成
+# =====================
+
+echo ""
+echo "[6/6] Finished"
 
 
 echo "Output:"
 echo "$OUTPUT"
 
 
-echo ""
 echo "=================================="
 echo " KU9 Decompile Finished"
 echo "=================================="
