@@ -1,0 +1,46 @@
+name: KU9 Decompile
+
+on:
+  workflow_dispatch:
+
+jobs:
+  decompile:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Install tools
+      run: |
+        sudo apt update
+        sudo apt install -y wget unzip
+
+    - name: Install apktool
+      run: |
+        wget https://github.com/iBotPeaches/Apktool/releases/latest/download/apktool.jar -O apktool.jar
+
+    - name: Install jadx
+      run: |
+        wget https://github.com/skylot/jadx/releases/latest/download/jadx.zip -O jadx.zip
+        unzip jadx.zip -d jadx
+
+    - name: Decode APK
+      run: |
+        java -jar apktool.jar d input/ku9.apk -o output/apktool
+
+    - name: Decompile Java
+      run: |
+        jadx/bin/jadx \
+        -d output/java \
+        input/ku9.apk
+
+    - name: Package
+      run: |
+        zip -r KU9-source.zip output
+
+    - name: Upload
+      uses: actions/upload-artifact@v4
+      with:
+        name: KU9-source
+        path: KU9-source.zip
