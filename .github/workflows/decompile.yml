@@ -7,9 +7,19 @@ on:
 
 
 
+permissions:
+
+  contents: read
+
+
+
 jobs:
 
+
   decompile:
+
+
+    name: Decompile KU9 APK
 
 
     runs-on: ubuntu-latest
@@ -19,33 +29,37 @@ jobs:
     steps:
 
 
+
     - name: Checkout
 
       uses: actions/checkout@v4
 
 
 
-    - name: Install Java
+    - name: Install Java and tools
 
       run: |
 
         sudo apt update
 
         sudo apt install -y \
-        wget \
-        unzip \
-        openjdk-17-jdk
+          wget \
+          unzip \
+          openjdk-17-jdk
 
 
 
-    - name: Download tools
+    - name: Create tools folder
 
       run: |
 
         mkdir -p tools
 
 
-        # apktool
+
+    - name: Download apktool
+
+      run: |
 
         wget \
         https://github.com/iBotPeaches/Apktool/releases/download/v3.0.3/apktool_3.0.3.jar \
@@ -53,15 +67,29 @@ jobs:
 
 
 
-        # baksmali
+    - name: Download baksmali
+
+      run: |
 
         wget \
-        https://github.com/JesusFreke/smali/releases/download/v3.0.9/baksmali-3.0.9.jar \
+        https://repo1.maven.org/maven2/com/android/tools/smali/baksmali/3.0.9/baksmali-3.0.9.jar \
         -O tools/baksmali.jar
 
 
 
-        # dex2jar
+    - name: Download smali
+
+      run: |
+
+        wget \
+        https://repo1.maven.org/maven2/com/android/tools/smali/smali/3.0.9/smali-3.0.9.jar \
+        -O tools/smali.jar
+
+
+
+    - name: Download dex2jar
+
+      run: |
 
         wget \
         https://github.com/pxb1988/dex2jar/releases/download/v2.4/dex-tools-2.4.zip \
@@ -75,7 +103,9 @@ jobs:
 
 
 
-        # CFR
+    - name: Download CFR
+
+      run: |
 
         wget \
         https://www.benf.org/other/cfr/cfr-0.152.jar \
@@ -87,36 +117,153 @@ jobs:
 
       run: |
 
+        echo "APK:"
+
         ls -lh input/
 
 
 
-
-    - name: Run decompile
-
-      run: |
-
-        chmod +x scripts/decompile.sh
-
-        ./scripts/decompile.sh
-
-
-
-    - name: Compress
+    - name: Decode resources
 
       run: |
 
-        zip -r KU9-source-cfr.zip output
+        rm -rf output
+
+        mkdir output
+
+
+        java -jar tools/apktool.jar \
+        d input/ku9.apk \
+        -o output/apktool \
+        --force
 
 
 
-    - name: Upload
+    - name: Extract dex
+
+      run: |
+
+        mkdir -p output/dex
+
+
+        unzip -o \
+        input/ku9.apk \
+        "classes*.dex" \
+        -d output/dex
+
+
+
+    - name: Baksmali decode
+
+      run: |
+
+        mkdir -p output/smali
+
+
+        for dex in output/dex/*.dex
+
+        do
+
+          name=$(basename "$dex" .dex)
+
+
+          echo "Decode $name"
+
+
+          java -jar tools/baksmali.jar \
+          d "$dex" \
+          -o output/smali/$name
+
+
+        done
+
+
+
+    - name: Dex to jar
+
+      run: |
+
+        mkdir -p output/jar
+
+
+        for dex in output/dex/*.dex
+
+        do
+
+          name=$(basename "$dex" .dex)
+
+
+          echo "Convert $name"
+
+
+          sh tools/dex-tools/d2j-dex2jar.sh \
+          "$dex" \
+          -o output/jar/$name.jar \
+          --force
+
+
+        done
+
+
+
+    - name: CFR Java decompile
+
+      run: |
+
+        mkdir -p output/java
+
+
+        for jar in output/jar/*.jar
+
+        do
+
+          name=$(basename "$jar" .jar)
+
+
+          mkdir -p output/java/$name
+
+
+          echo "Decompile $name"
+
+
+          java -jar tools/cfr.jar \
+          "$jar" \
+          --outputdir output/java/$name \
+          --silent true
+
+
+        done
+
+
+
+    - name: Copy resources
+
+      run: |
+
+        cp -r output/apktool/res output/ || true
+
+
+        cp -r output/apktool/assets output/ || true
+
+
+        cp output/apktool/AndroidManifest.xml output/ || true
+
+
+
+    - name: Package result
+
+      run: |
+
+        zip -r KU9-source-CFR.zip output
+
+
+
+    - name: Upload result
 
       uses: actions/upload-artifact@v4
 
-
       with:
 
-        name: KU9-source-cfr
+        name: KU9-source-CFR
 
-        path: KU9-source-cfr.zip
+        path: KU9-source-CFR.zip
