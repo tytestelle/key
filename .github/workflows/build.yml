@@ -1,162 +1,201 @@
-name: Build KU9 TVBox
-
+name: KU9 Rebuild
 
 on:
-
   workflow_dispatch:
 
-
-
 jobs:
-
-
   build:
-
-
     runs-on: ubuntu-latest
-
-
 
     steps:
 
-
-    # =========================
-    # 拉取源码
-    # =========================
-
-    - name: Checkout source
-
-      uses: actions/checkout@v4
+      - name: Checkout KU9 project
+        uses: actions/checkout@v4
 
 
-
-    # =========================
-    # 显示工程结构
-    # =========================
-
-    - name: Show project tree
-
-      run: |
-
-        echo "===== Project ====="
-
-        find . -maxdepth 4 -type d | sort | head -150
+      - name: Show repository
+        run: |
+          echo "===== Repository ====="
+          find . -maxdepth 3 -type f | sort | head -200 || true
 
 
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            wget \
+            unzip \
+            git \
+            openjdk-17-jdk
 
-    # =========================
-    # 安装环境
-    # =========================
 
-    - name: Install dependencies
+      - name: Download Apktool
+        run: |
+          mkdir -p tools
 
-      run: |
-
-        sudo apt update
-
-        sudo apt install -y \
           wget \
-          unzip \
-          openjdk-17-jdk
+            https://github.com/iBotPeaches/Apktool/releases/download/v3.0.3/apktool_3.0.3.jar \
+            -O tools/apktool.jar
 
 
+      - name: Check KU9 APK
+        run: |
+          if [ ! -f "input/ku9.apk" ]; then
+            echo "ERROR: input/ku9.apk not found"
+            exit 1
+          fi
 
-    # =========================
-    # 安装 apktool
-    # =========================
-
-    - name: Install apktool
-
-      run: |
-
-        mkdir -p tools
+          ls -lh input/ku9.apk
 
 
-        wget \
-        https://github.com/iBotPeaches/Apktool/releases/download/v3.0.3/apktool_3.0.3.jar \
-        -O tools/apktool.jar
+      - name: Clone 080java
+        run: |
+          rm -rf base080java
+
+          git clone \
+            https://github.com/9602894/080java.git \
+            base080java
+
+          echo "===== 080java ====="
+
+          find base080java -maxdepth 4 -type f | sort | head -300 || true
 
 
+      - name: Decode KU9
+        run: |
+          rm -rf ku9_decode
 
-    # =========================
-    # 检查 KU9 APK
-    # =========================
-
-    - name: Check KU9 APK
-
-      run: |
-
-        ls -lh input/
+          java -jar tools/apktool.jar \
+            d input/ku9.apk \
+            -o ku9_decode \
+            --force
 
 
+      - name: Analyze Android project
+        run: |
+          echo "===== Gradle ====="
+          find base080java \
+            -name "settings.gradle" \
+            -o -name "settings.gradle.kts" \
+            -o -name "build.gradle" \
+            -o -name "build.gradle.kts" \
+            -o -name "gradlew" \
+            | sort
+
+          echo ""
+          echo "===== Android resources ====="
+
+          find base080java \
+            -type d \
+            -path "*/src/main/res" \
+            -print
 
 
-    # =========================
-    # 合并 KU9资源
-    # =========================
+      - name: Prepare KU9 patch
+        run: |
+          mkdir -p ku9_patch
 
-    - name: Apply KU9 patch
+          cp -r ku9_decode/res \
+            ku9_patch/res
 
-      run: |
+          if [ -d "ku9_decode/assets" ]; then
+            cp -r ku9_decode/assets \
+              ku9_patch/assets
+          fi
 
-        chmod +x scripts/apply_ku9.sh
+          cp ku9_decode/AndroidManifest.xml \
+            ku9_patch/AndroidManifest.xml
 
-        ./scripts/apply_ku9.sh
-
-
-
-    # =========================
-    # 查找 gradle
-    # =========================
-
-    - name: Find gradle project
-
-      run: |
-
-        find . -name gradlew -type f
+          echo "===== KU9 patch ====="
+          find ku9_patch -maxdepth 2 -type d | sort
 
 
+      - name: Find Android module
+        run: |
+          RES_DIR=$(find base080java \
+            -type d \
+            -path "*/src/main/res" \
+            -print -quit)
+
+          if [ -z "$RES_DIR" ]; then
+            echo "ERROR: Cannot find Android resource directory in 080java"
+            echo ""
+            echo "Repository structure:"
+            find base080java -maxdepth 5 -type d | sort | head -300 || true
+            exit 1
+          fi
+
+          echo "RES_DIR=$RES_DIR" >> "$GITHUB_ENV"
+
+          MAIN_DIR=$(dirname "$RES_DIR")
+
+          echo "MAIN_DIR=$MAIN_DIR" >> "$GITHUB_ENV"
+
+          echo "Android resource directory:"
+          echo "$RES_DIR"
 
 
-    # =========================
-    # 编译
-    # =========================
+      - name: Merge KU9 resources
+        run: |
+          echo "Using:"
+          echo "$RES_DIR"
 
-    - name: Build APK
+          mkdir -p "$RES_DIR"
 
-      run: |
+          cp -rf ku9_patch/res/* \
+            "$RES_DIR/" || true
 
-        chmod +x ./gradlew
+          if [ -d "ku9_patch/assets" ]; then
 
-        ./gradlew assembleRelease --stacktrace
+            mkdir -p "$MAIN_DIR/assets"
 
+            cp -rf ku9_patch/assets/* \
+              "$MAIN_DIR/assets/" || true
 
-
-    # =========================
-    # 查找生成APK
-    # =========================
-
-    - name: Find APK
-
-      run: |
-
-        find . -name "*.apk"
+          fi
 
 
+      - name: Locate Gradle wrapper
+        run: |
+          GRADLEW=$(find base080java \
+            -name gradlew \
+            -type f \
+            -print -quit)
 
-    # =========================
-    # 上传
-    # =========================
+          if [ -z "$GRADLEW" ]; then
+            echo "ERROR: gradlew not found"
+            exit 1
+          fi
 
-    - name: Upload APK
+          echo "GRADLEW=$GRADLEW" >> "$GITHUB_ENV"
 
-      uses: actions/upload-artifact@v4
+          chmod +x "$GRADLEW"
+
+          echo "Gradle wrapper:"
+          echo "$GRADLEW"
 
 
-      with:
+      - name: Build 080java with KU9 resources
+        run: |
+          cd "$(dirname "$GRADLEW")"
 
-        name: KU9-release-apk
+          ./gradlew assembleRelease --stacktrace
 
-        path: |
 
-          **/build/outputs/apk/**/*.apk
+      - name: Find APK
+        run: |
+          echo "===== APK ====="
+
+          find base080java \
+            -type f \
+            -name "*.apk" \
+            -print
+
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+
+        with:
+          name: KU9-rebuild
+          path: |
+            base080java/**/*.apk
