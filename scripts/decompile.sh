@@ -3,14 +3,14 @@
 set -e
 
 
-echo "=============================="
-echo " KU9 CFR Decompile "
-echo "=============================="
-
-
 APK=input/ku9.apk
 
 OUT=output
+
+
+echo "=========================="
+echo " KU9 Decompile "
+echo "=========================="
 
 
 rm -rf $OUT
@@ -55,7 +55,11 @@ do
 NAME=$(basename $dex .dex)
 
 
-sh tools/dex-tools/d2j-dex2jar.sh \
+echo "convert $NAME"
+
+
+java -cp tools/dex-tools.jar \
+com.googlecode.dex2jar.tools.Dex2jarCmd \
 $dex \
 -o $OUT/jar/$NAME.jar \
 --force
