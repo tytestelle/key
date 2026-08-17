@@ -1,283 +1,146 @@
-name: KU9 Decompile CFR
+#!/bin/bash
 
+set -e
 
-on:
 
-  workflow_dispatch:
+echo "================================"
+echo " KU9 Decompile Start"
+echo "================================"
 
 
+APK="input/ku9.apk"
 
-permissions:
+OUT="output"
 
-  contents: read
 
+if [ ! -f "$APK" ]; then
 
+    echo "APK not found"
 
-jobs:
+    exit 1
 
+fi
 
-  decompile:
 
+rm -rf "$OUT"
 
-    name: KU9 Source Extract
+mkdir -p "$OUT"
 
 
-    runs-on: ubuntu-latest
 
+echo "[1/6] apktool"
 
 
-    steps:
+java -jar tools/apktool.jar \
+d "$APK" \
+-o "$OUT/apktool" \
+--force
 
 
 
-    - name: Checkout
+echo "[2/6] extract dex"
 
-      uses: actions/checkout@v4
 
+mkdir -p "$OUT/dex"
 
 
-    - name: Install environment
+unzip -o \
+"$APK" \
+"classes*.dex" \
+-d "$OUT/dex"
 
-      run: |
 
-        sudo apt update
 
-        sudo apt install -y \
-          wget \
-          unzip \
-          openjdk-17-jdk
+echo "[3/6] baksmali"
 
 
+mkdir -p "$OUT/smali"
 
-    - name: Create tools
 
-      run: |
+for dex in "$OUT"/dex/classes*.dex
 
-        mkdir -p tools
+do
 
+    NAME=$(basename "$dex" .dex)
 
 
-    - name: Download apktool
+    echo "Decode $NAME"
 
-      run: |
 
-        wget \
-        https://github.com/iBotPeaches/Apktool/releases/download/v3.0.3/apktool_3.0.3.jar \
-        -O tools/apktool.jar
+    java -jar tools/baksmali.jar \
+    d "$dex" \
+    -o "$OUT/smali/$NAME"
 
+done
 
 
-    - name: Download baksmali
 
-      run: |
+echo "[4/6] dex2jar"
 
-        wget \
-        https://github.com/JesusFreke/smali/releases/download/v3.0.8/baksmali-3.0.8.jar \
-        -O tools/baksmali.jar
 
+mkdir -p "$OUT/jar"
 
 
-    - name: Download smali
+for dex in "$OUT"/dex/classes*.dex
 
-      run: |
+do
 
-        wget \
-        https://github.com/JesusFreke/smali/releases/download/v3.0.8/smali-3.0.8.jar \
-        -O tools/smali.jar
+    NAME=$(basename "$dex" .dex)
 
 
+    echo "Convert $NAME"
 
-    - name: Download dex2jar
 
-      run: |
+    sh tools/dex-tools/d2j-dex2jar.sh \
+    "$dex" \
+    -o "$OUT/jar/$NAME.jar" \
+    --force
 
-        wget \
-        https://github.com/pxb1988/dex2jar/releases/download/v2.4/dex-tools-2.4.zip \
-        -O dex-tools.zip
+done
 
 
-        unzip -o dex-tools.zip
 
+echo "[5/6] CFR"
 
-        DIR=$(find . -maxdepth 1 -type d -name "dex-tools*" | head -1)
 
+mkdir -p "$OUT/java"
 
-        mv "$DIR" tools/dex-tools
 
+for jar in "$OUT"/jar/*.jar
 
+do
 
-    - name: Download CFR
+    NAME=$(basename "$jar" .jar)
 
-      run: |
 
-        wget \
-        https://www.benf.org/other/cfr/cfr-0.152.jar \
-        -O tools/cfr.jar
+    mkdir -p "$OUT/java/$NAME"
 
 
+    echo "CFR $NAME"
 
-    - name: Check input
 
-      run: |
+    java -jar tools/cfr.jar \
+    "$jar" \
+    --outputdir "$OUT/java/$NAME" \
+    --silent true
 
-        echo "APK files"
+done
 
-        ls -lh input
 
 
+echo "[6/6] copy resources"
 
-    - name: Decode APK resources
 
-      run: |
+cp -r "$OUT/apktool/res" "$OUT/" || true
 
-        rm -rf output
 
-        mkdir output
+cp -r "$OUT/apktool/assets" "$OUT/" || true
 
 
-        java -jar tools/apktool.jar \
-        d input/ku9.apk \
-        -o output/apktool \
-        --force
+cp "$OUT/apktool/AndroidManifest.xml" "$OUT/" || true
 
 
 
-    - name: Extract dex files
-
-      run: |
-
-        mkdir -p output/dex
-
-
-        unzip -o \
-        input/ku9.apk \
-        "classes*.dex" \
-        -d output/dex
-
-
-
-    - name: Decode smali
-
-      run: |
-
-        mkdir -p output/smali
-
-
-        for dex in output/dex/classes*.dex
-
-        do
-
-          NAME=$(basename "$dex" .dex)
-
-
-          echo "Baksmali $NAME"
-
-
-          java -jar tools/baksmali.jar \
-          d "$dex" \
-          -o output/smali/$NAME
-
-
-        done
-
-
-
-    - name: Convert dex to jar
-
-      run: |
-
-        mkdir -p output/jar
-
-
-        for dex in output/dex/classes*.dex
-
-        do
-
-          NAME=$(basename "$dex" .dex)
-
-
-          echo "dex2jar $NAME"
-
-
-          sh tools/dex-tools/d2j-dex2jar.sh \
-          "$dex" \
-          -o output/jar/$NAME.jar \
-          --force
-
-
-        done
-
-
-
-    - name: CFR decompile
-
-      run: |
-
-        mkdir -p output/java
-
-
-        for jar in output/jar/*.jar
-
-        do
-
-          NAME=$(basename "$jar" .jar)
-
-
-          mkdir -p output/java/$NAME
-
-
-          echo "CFR $NAME"
-
-
-          java -jar tools/cfr.jar \
-          "$jar" \
-          --outputdir output/java/$NAME \
-          --silent true
-
-
-        done
-
-
-
-    - name: Copy resources
-
-      run: |
-
-        cp -r output/apktool/res output/ || true
-
-
-        cp -r output/apktool/assets output/ || true
-
-
-        cp output/apktool/AndroidManifest.xml output/ || true
-
-
-
-    - name: Show result
-
-      run: |
-
-        echo "========== RESULT =========="
-
-        find output -maxdepth 2 -type d | sort
-
-
-
-    - name: Package
-
-      run: |
-
-        zip -r KU9-CFR-source.zip output
-
-
-
-    - name: Upload
-
-      uses: actions/upload-artifact@v4
-
-
-      with:
-
-        name: KU9-CFR-source
-
-        path: KU9-CFR-source.zip
+echo "================================"
+echo " Finished"
+echo "================================"
