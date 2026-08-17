@@ -1,13 +1,19 @@
-name: Clean KU9 Source
+name: KU9 Clean Source
 
 
 on:
   workflow_dispatch:
 
 
+permissions:
+  contents: read
+
+
 jobs:
 
   clean:
+
+    name: Clean KU9 Source
 
     runs-on: ubuntu-latest
 
@@ -15,162 +21,123 @@ jobs:
     steps:
 
 
-    - name: Checkout
+      - name: Checkout
 
-      uses: actions/checkout@v4
+        uses: actions/checkout@v4
 
 
 
-    - name: Install tools
+      - name: Show files
 
-      run: |
+        run: |
 
-        sudo apt update
+          echo "Current directory"
 
-        sudo apt install -y \
+          pwd
+
+          echo ""
+
+          echo "Files:"
+
+          ls -la
+
+          echo ""
+
+          find . -maxdepth 2 -type d
+
+
+
+      - name: Install tools
+
+        run: |
+
+          sudo apt update
+
+          sudo apt install -y \
+            unzip \
+            wget \
+            python3
+
+
+
+      - name: Download apktool
+
+        run: |
+
+          mkdir -p tools
+
+
           wget \
-          unzip \
-          openjdk-17-jdk \
-          python3
+          https://github.com/iBotPeaches/Apktool/releases/download/v3.0.3/apktool_3.0.3.jar \
+          -O tools/apktool.jar
 
 
 
-    - name: Install apktool
+      - name: Check APK
 
-      run: |
+        run: |
 
-        mkdir -p tools
+          echo "APK list:"
 
+          ls -lh input || true
 
-        wget \
-        https://github.com/iBotPeaches/Apktool/releases/download/v3.0.3/apktool_3.0.3.jar \
-        -O tools/apktool.jar
 
 
+      - name: Decode KU9 APK
 
-    - name: Decode KU9 APK
+        run: |
 
-      run: |
+          java -jar tools/apktool.jar \
+          d input/ku9.apk \
+          -o ku9_decode \
+          --force
 
-        java -jar tools/apktool.jar \
-        d input/ku9.apk \
-        -o ku9_decode \
-        --force
 
 
+      - name: Create clean package
 
-    - name: Analyze 080java
+        run: |
 
-      run: |
+          mkdir KU9-clean
 
-        echo "===== 080java ====="
 
-        find . \
-        -type f \
-        | grep -E "\.java$|\.xml$|\.gradle$" \
-        | head -200
+          echo "Copy java source"
 
 
+          find . \
+          -name "*.java" \
+          -not -path "./ku9_decode/*" \
+          -exec cp --parents {} KU9-clean/ \;
 
-    - name: Remove useless libraries
 
-      run: |
+          echo "Copy resources"
 
-        mkdir clean_source
 
+          cp -r ku9_decode/res KU9-clean/
 
-        # Java源码
 
-        find . \
-        -name "*.java" \
-        -not -path "./ku9_decode/*" \
-        -exec cp --parents {} clean_source/ \;
+          if [ -d ku9_decode/assets ]; then
 
+            cp -r ku9_decode/assets KU9-clean/
 
+          fi
 
-    - name: Extract KU9 resources
 
-      run: |
 
-        mkdir -p clean_source/ku9_patch
+      - name: Compress
 
+        run: |
 
-        cp -r ku9_decode/res \
-        clean_source/ku9_patch/
+          zip -r KU9-clean.zip KU9-clean
 
 
-        if [ -d ku9_decode/assets ]; then
 
-          cp -r ku9_decode/assets \
-          clean_source/ku9_patch/
+      - name: Upload
 
-        fi
+        uses: actions/upload-artifact@v4
 
+        with:
 
+          name: KU9-clean
 
-    - name: Remove obvious obfuscation
-
-      run: |
-
-        python3 <<EOF
-
-import os,re
-
-
-root="clean_source"
-
-
-for path,dirs,files in os.walk(root):
-
-    for f in files:
-
-        if f.endswith(".java"):
-
-            p=os.path.join(path,f)
-
-            try:
-
-                s=open(p,encoding="utf-8").read()
-
-            except:
-
-                continue
-
-
-            # 删除 JADX 自动生成注释
-
-            s=re.sub(
-                r'/\* JADX.*?\*/',
-                '',
-                s,
-                flags=re.S
-            )
-
-
-            open(
-                p,
-                "w",
-                encoding="utf-8"
-            ).write(s)
-
-EOF
-
-
-
-    - name: Package
-
-      run: |
-
-        zip -r KU9-clean-source.zip clean_source
-
-
-
-    - name: Upload
-
-      uses: actions/upload-artifact@v4
-
-      with:
-
-        name: KU9-clean-source
-
-        path: KU9-clean-source.zip
+          path: KU9-clean.zip
