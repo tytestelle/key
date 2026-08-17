@@ -1,169 +1,105 @@
 #!/bin/bash
 
-
 set -e
 
 
-
 echo "=============================="
-
-echo " KU9 Decompile"
-
+echo " KU9 CFR Decompile "
 echo "=============================="
 
 
+APK=input/ku9.apk
 
-APK="input/ku9.apk"
-
-OUT="output"
-
+OUT=output
 
 
-if [ ! -f "$APK" ]; then
+rm -rf $OUT
 
-    echo "ERROR: ku9.apk not found"
-
-    exit 1
-
-fi
+mkdir -p $OUT
 
 
 
-rm -rf "$OUT"
-
-mkdir -p "$OUT"
-
-
-
-echo "[1/6] Apktool"
+echo "[1] apktool"
 
 
 java -jar tools/apktool.jar \
-d "$APK" \
--o "$OUT/apktool" \
+d $APK \
+-o $OUT/apktool \
 --force
 
 
 
+echo "[2] extract dex"
 
-echo "[2/6] Extract dex"
 
-
-mkdir -p "$OUT/dex"
+mkdir -p $OUT/dex
 
 
 unzip -o \
-"$APK" \
+$APK \
 "classes*.dex" \
--d "$OUT/dex"
+-d $OUT/dex
 
 
 
-
-echo "[3/6] Baksmali"
-
-
-mkdir -p "$OUT/smali"
+echo "[3] dex2jar"
 
 
+mkdir -p $OUT/jar
 
-for dex in "$OUT"/dex/classes*.dex
+
+for dex in $OUT/dex/classes*.dex
 
 do
 
-    NAME=$(basename "$dex" .dex)
+NAME=$(basename $dex .dex)
 
 
-    echo "decode $NAME"
-
-
-    java -jar tools/baksmali.jar \
-    d "$dex" \
-    -o "$OUT/smali/$NAME"
+sh tools/dex-tools/d2j-dex2jar.sh \
+$dex \
+-o $OUT/jar/$NAME.jar \
+--force
 
 
 done
 
 
 
-
-echo "[4/6] Dex2Jar"
-
-
-mkdir -p "$OUT/jar"
+echo "[4] CFR"
 
 
+mkdir -p $OUT/java
 
-for dex in "$OUT"/dex/classes*.dex
+
+for jar in $OUT/jar/*.jar
 
 do
 
-    NAME=$(basename "$dex" .dex)
+NAME=$(basename $jar .jar)
 
 
-    echo "convert $NAME"
+mkdir -p $OUT/java/$NAME
 
 
-    sh tools/dex-tools/d2j-dex2jar.sh \
-    "$dex" \
-    -o "$OUT/jar/$NAME.jar" \
-    --force
+java -jar tools/cfr.jar \
+$jar \
+--outputdir $OUT/java/$NAME \
+--silent true
 
 
 done
 
 
 
+echo "[5] resources"
 
 
-echo "[5/6] CFR"
+cp -r $OUT/apktool/res $OUT/ || true
 
+cp -r $OUT/apktool/assets $OUT/ || true
 
-mkdir -p "$OUT/java"
-
-
-
-for jar in "$OUT"/jar/*.jar
-
-do
-
-    NAME=$(basename "$jar" .jar)
-
-
-    mkdir -p "$OUT/java/$NAME"
-
-
-    echo "decompile $NAME"
+cp $OUT/apktool/AndroidManifest.xml $OUT/ || true
 
 
 
-    java -jar tools/cfr.jar \
-    "$jar" \
-    --outputdir "$OUT/java/$NAME" \
-    --silent true
-
-
-done
-
-
-
-
-
-echo "[6/6] Copy resources"
-
-
-
-cp -r "$OUT/apktool/res" "$OUT/" || true
-
-cp -r "$OUT/apktool/assets" "$OUT/" || true
-
-cp "$OUT/apktool/AndroidManifest.xml" "$OUT/" || true
-
-
-
-
-echo "=============================="
-
-echo " DONE "
-
-echo "=============================="
+echo "DONE"
