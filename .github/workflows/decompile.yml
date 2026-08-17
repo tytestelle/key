@@ -1,4 +1,4 @@
-name: KU9 Decompile
+name: KU9 Decompile CFR
 
 
 on:
@@ -56,21 +56,6 @@ jobs:
 
 
 
-    - name: Download smali
-
-      run: |
-
-        wget \
-        https://repo1.maven.org/maven2/org/smali/smali/3.0.9/smali-3.0.9.jar \
-        -O tools/smali.jar
-
-
-        wget \
-        https://repo1.maven.org/maven2/org/smali/baksmali/3.0.9/baksmali-3.0.9.jar \
-        -O tools/baksmali.jar
-
-
-
     - name: Download dex2jar
 
       run: |
@@ -101,13 +86,13 @@ jobs:
 
       run: |
 
-        ls -lh tools/
-
         ls -lh input/
 
+        ls -lh tools/
 
 
-    - name: Run
+
+    - name: Run decompile
 
       run: |
 
@@ -117,7 +102,7 @@ jobs:
 
 
 
-    - name: Zip
+    - name: Package
 
       run: |
 
