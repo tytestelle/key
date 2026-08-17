@@ -2,7 +2,9 @@ name: KU9 APK Decompile
 
 
 on:
+
   workflow_dispatch:
+
 
 
 jobs:
@@ -14,18 +16,19 @@ jobs:
 
     steps:
 
-    # -----------------------
-    # 拉取代码
-    # -----------------------
 
-    - name: Checkout source
+    # =====================
+    # 拉代码
+    # =====================
+
+    - name: Checkout
       uses: actions/checkout@v4
 
 
 
-    # -----------------------
-    # 安装环境
-    # -----------------------
+    # =====================
+    # 环境
+    # =====================
 
     - name: Install dependencies
       run: |
@@ -39,14 +42,15 @@ jobs:
 
 
 
-    # -----------------------
-    # 安装 apktool
-    # -----------------------
+    # =====================
+    # apktool
+    # =====================
 
-    - name: Download apktool
+    - name: Install apktool
       run: |
 
         mkdir -p tools
+
 
         wget \
         https://github.com/iBotPeaches/Apktool/releases/download/v3.0.3/apktool_3.0.3.jar \
@@ -54,11 +58,11 @@ jobs:
 
 
 
-    # -----------------------
-    # 安装 jadx
-    # -----------------------
+    # =====================
+    # jadx
+    # =====================
 
-    - name: Download jadx
+    - name: Install jadx
       run: |
 
         wget \
@@ -73,11 +77,11 @@ jobs:
 
 
 
-    # -----------------------
-    # 执行反编译
-    # -----------------------
+    # =====================
+    # 执行
+    # =====================
 
-    - name: Decompile KU9 APK
+    - name: Decompile KU9
       run: |
 
         chmod +x scripts/decompile.sh
@@ -86,22 +90,22 @@ jobs:
 
 
 
-    # -----------------------
-    # 压缩结果
-    # -----------------------
+    # =====================
+    # 打包
+    # =====================
 
-    - name: Package result
+    - name: Compress result
       run: |
 
         zip -r KU9-source.zip output
 
 
 
-    # -----------------------
-    # 上传结果
-    # -----------------------
+    # =====================
+    # 下载
+    # =====================
 
-    - name: Upload result
+    - name: Upload artifact
       uses: actions/upload-artifact@v4
 
       with:
