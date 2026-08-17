@@ -38,7 +38,7 @@ jobs:
 
 
 
-    - name: Create tools directory
+    - name: Prepare tools
 
       run: |
 
@@ -56,23 +56,18 @@ jobs:
 
 
 
-    - name: Download baksmali
-
-      run: |
-
-        wget \
-        https://github.com/baksmali/smali/releases/download/v3.0.9/baksmali-3.0.9-fat-release.jar \
-        -O tools/baksmali.jar
-
-
-
     - name: Download smali
 
       run: |
 
         wget \
-        https://github.com/baksmali/smali/releases/download/v3.0.9/smali-3.0.9-fat-release.jar \
+        https://repo1.maven.org/maven2/org/smali/smali/3.0.9/smali-3.0.9.jar \
         -O tools/smali.jar
+
+
+        wget \
+        https://repo1.maven.org/maven2/org/smali/baksmali/3.0.9/baksmali-3.0.9.jar \
+        -O tools/baksmali.jar
 
 
 
@@ -102,22 +97,17 @@ jobs:
 
 
 
-    - name: Check project
+    - name: Check
 
       run: |
 
-        echo "APK"
+        ls -lh tools/
 
         ls -lh input/
 
 
-        echo "TOOLS"
 
-        ls -lh tools/
-
-
-
-    - name: Run decompile
+    - name: Run
 
       run: |
 
@@ -127,7 +117,7 @@ jobs:
 
 
 
-    - name: Package result
+    - name: Zip
 
       run: |
 
@@ -135,7 +125,7 @@ jobs:
 
 
 
-    - name: Upload result
+    - name: Upload
 
       uses: actions/upload-artifact@v4
 
