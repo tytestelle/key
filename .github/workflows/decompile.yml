@@ -1,4 +1,5 @@
-name: KU9 Decompile CFR
+name: KU9 Decompile
+
 
 on:
   workflow_dispatch:
@@ -60,7 +61,7 @@ jobs:
       run: |
 
         wget \
-        https://github.com/JesusFreke/smali/releases/latest/download/baksmali.jar \
+        https://github.com/JesusFreke/smali/releases/download/v2.5.2/baksmali-2.5.2.jar \
         -O tools/baksmali.jar
 
 
@@ -70,7 +71,7 @@ jobs:
       run: |
 
         wget \
-        https://github.com/JesusFreke/smali/releases/latest/download/smali.jar \
+        https://github.com/JesusFreke/smali/releases/download/v2.5.2/smali-2.5.2.jar \
         -O tools/smali.jar
 
 
@@ -101,144 +102,46 @@ jobs:
 
 
 
-    - name: Check APK
+    - name: Check files
 
       run: |
+
+        echo "APK:"
 
         ls -lh input/
 
+        echo ""
 
+        echo "Tools:"
 
-    - name: Decode resource
-
-      run: |
-
-        rm -rf output
-
-        mkdir output
-
-
-        java -jar tools/apktool.jar \
-        d input/ku9.apk \
-        -o output/apktool \
-        --force
+        ls -lh tools/
 
 
 
-    - name: Extract dex
+    - name: Run decompile
 
       run: |
 
-        mkdir -p output/dex
+        chmod +x scripts/decompile.sh
 
-
-        unzip -o \
-        input/ku9.apk \
-        "classes*.dex" \
-        -d output/dex
+        ./scripts/decompile.sh
 
 
 
-    - name: Baksmali
+    - name: Compress result
 
       run: |
 
-        mkdir -p output/smali
-
-
-        for dex in output/dex/classes*.dex
-
-        do
-
-          name=$(basename "$dex" .dex)
-
-
-          java -jar tools/baksmali.jar \
-          d "$dex" \
-          -o output/smali/$name
-
-
-        done
+        zip -r KU9-source.zip output
 
 
 
-    - name: Dex2jar
-
-      run: |
-
-        mkdir -p output/jar
-
-
-        for dex in output/dex/classes*.dex
-
-        do
-
-          name=$(basename "$dex" .dex)
-
-
-          sh tools/dex-tools/d2j-dex2jar.sh \
-          "$dex" \
-          -o output/jar/$name.jar \
-          --force
-
-
-        done
-
-
-
-    - name: CFR
-
-      run: |
-
-        mkdir -p output/java
-
-
-        for jar in output/jar/*.jar
-
-        do
-
-          name=$(basename "$jar" .jar)
-
-
-          mkdir -p output/java/$name
-
-
-          java -jar tools/cfr.jar \
-          "$jar" \
-          --outputdir output/java/$name \
-          --silent true
-
-
-        done
-
-
-
-    - name: Copy resources
-
-      run: |
-
-        cp -r output/apktool/res output/ || true
-
-        cp -r output/apktool/assets output/ || true
-
-        cp output/apktool/AndroidManifest.xml output/ || true
-
-
-
-    - name: Package
-
-      run: |
-
-        zip -r KU9-CFR-source.zip output
-
-
-
-    - name: Upload
+    - name: Upload result
 
       uses: actions/upload-artifact@v4
 
       with:
 
-        name: KU9-CFR-source
+        name: KU9-source
 
-        path: KU9-CFR-source.zip
+        path: KU9-source.zip
