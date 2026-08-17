@@ -25,7 +25,7 @@ jobs:
 
 
 
-    - name: Install Java
+    - name: Install environment
 
       run: |
 
@@ -34,6 +34,7 @@ jobs:
         sudo apt install -y \
           wget \
           unzip \
+          git \
           openjdk-17-jdk
 
 
@@ -56,13 +57,28 @@ jobs:
 
 
 
-    - name: Download dex2jar
+    - name: Build dex2jar
 
       run: |
 
-        wget \
-        https://repo1.maven.org/maven2/com/googlecode/dex2jar/dex-tools/2.4/dex-tools-2.4.jar \
-        -O tools/dex-tools.jar
+        git clone https://github.com/pxb1988/dex2jar.git
+
+
+        cd dex2jar
+
+
+        ./gradlew distZip
+
+
+        unzip -o dex-tools/build/distributions/*.zip -d ../tools
+
+
+
+        cd ..
+
+
+
+        mv tools/dex-tools-* tools/dex-tools
 
 
 
@@ -76,17 +92,17 @@ jobs:
 
 
 
-    - name: Check tools
+    - name: Check
 
       run: |
 
-        ls -lh tools/
+        ls -R tools
 
-        ls -lh input/
+        ls -lh input
 
 
 
-    - name: Run decompile
+    - name: Run
 
       run: |
 
