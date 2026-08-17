@@ -8,9 +8,9 @@ APK=input/ku9.apk
 OUT=output
 
 
-echo "=========================="
+echo "======================"
 echo " KU9 Decompile "
-echo "=========================="
+echo "======================"
 
 
 rm -rf $OUT
@@ -55,11 +55,10 @@ do
 NAME=$(basename $dex .dex)
 
 
-echo "convert $NAME"
+echo $NAME
 
 
-java -cp tools/dex-tools.jar \
-com.googlecode.dex2jar.tools.Dex2jarCmd \
+sh tools/dex-tools/d2j-dex2jar.sh \
 $dex \
 -o $OUT/jar/$NAME.jar \
 --force
@@ -103,7 +102,6 @@ cp -r $OUT/apktool/res $OUT/ || true
 cp -r $OUT/apktool/assets $OUT/ || true
 
 cp $OUT/apktool/AndroidManifest.xml $OUT/ || true
-
 
 
 echo "DONE"
