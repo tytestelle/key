@@ -38,7 +38,7 @@ jobs:
 
 
 
-    - name: Prepare tools
+    - name: Create tools directory
 
       run: |
 
@@ -61,7 +61,7 @@ jobs:
       run: |
 
         wget \
-        https://github.com/JesusFreke/smali/releases/download/v2.5.2/baksmali-2.5.2.jar \
+        https://github.com/baksmali/smali/releases/download/v3.0.9/baksmali-3.0.9-fat-release.jar \
         -O tools/baksmali.jar
 
 
@@ -71,7 +71,7 @@ jobs:
       run: |
 
         wget \
-        https://github.com/JesusFreke/smali/releases/download/v2.5.2/smali-2.5.2.jar \
+        https://github.com/baksmali/smali/releases/download/v3.0.9/smali-3.0.9-fat-release.jar \
         -O tools/smali.jar
 
 
@@ -102,17 +102,16 @@ jobs:
 
 
 
-    - name: Check files
+    - name: Check project
 
       run: |
 
-        echo "APK:"
+        echo "APK"
 
         ls -lh input/
 
-        echo ""
 
-        echo "Tools:"
+        echo "TOOLS"
 
         ls -lh tools/
 
@@ -128,7 +127,7 @@ jobs:
 
 
 
-    - name: Compress result
+    - name: Package result
 
       run: |
 
