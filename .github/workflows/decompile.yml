@@ -2,7 +2,6 @@ name: KU9 APK Decompile
 
 
 on:
-
   workflow_dispatch:
 
 
@@ -15,20 +14,20 @@ jobs:
 
     steps:
 
-    # ======================
-    # Checkout
-    # ======================
+    # -----------------------
+    # 拉取代码
+    # -----------------------
 
     - name: Checkout source
       uses: actions/checkout@v4
 
 
 
-    # ======================
-    # Install dependencies
-    # ======================
+    # -----------------------
+    # 安装环境
+    # -----------------------
 
-    - name: Install packages
+    - name: Install dependencies
       run: |
 
         sudo apt update
@@ -40,9 +39,9 @@ jobs:
 
 
 
-    # ======================
-    # Download apktool
-    # ======================
+    # -----------------------
+    # 安装 apktool
+    # -----------------------
 
     - name: Download apktool
       run: |
@@ -55,9 +54,9 @@ jobs:
 
 
 
-    # ======================
-    # Download jadx
-    # ======================
+    # -----------------------
+    # 安装 jadx
+    # -----------------------
 
     - name: Download jadx
       run: |
@@ -67,21 +66,18 @@ jobs:
         -O jadx.zip
 
 
-        unzip jadx.zip -d tools
+        unzip -o jadx.zip -d tools
 
 
-        mv tools/jadx-1.5.1 tools/jadx
-
-
-        chmod +x tools/jadx/bin/jadx
+        chmod +x tools/bin/jadx
 
 
 
-    # ======================
-    # Run script
-    # ======================
+    # -----------------------
+    # 执行反编译
+    # -----------------------
 
-    - name: Decompile KU9
+    - name: Decompile KU9 APK
       run: |
 
         chmod +x scripts/decompile.sh
@@ -90,22 +86,22 @@ jobs:
 
 
 
-    # ======================
-    # Package result
-    # ======================
+    # -----------------------
+    # 压缩结果
+    # -----------------------
 
-    - name: Compress result
+    - name: Package result
       run: |
 
         zip -r KU9-source.zip output
 
 
 
-    # ======================
-    # Upload
-    # ======================
+    # -----------------------
+    # 上传结果
+    # -----------------------
 
-    - name: Upload artifact
+    - name: Upload result
       uses: actions/upload-artifact@v4
 
       with:
